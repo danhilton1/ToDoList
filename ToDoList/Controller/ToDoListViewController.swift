@@ -10,16 +10,23 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
     
-    let defaults = UserDefaults()
     
-    var itemArray = [String]()
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+    
+    
+    var itemArray = [Item]()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        if let items = defaults.array(forKey: "ToDoListArray") as? [String] {
-            itemArray = items
-        }
+//        print(dataFilePath)
+        
+//        let newItem = Item()
+        //itemArray.append(newItem)
+        
+        loadItems()
+        
         
     }
     
@@ -32,7 +39,12 @@ class ToDoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoListCell", for: indexPath)
         
-        cell.textLabel?.text = itemArray[indexPath.row]
+        let item = itemArray[indexPath.row]
+        
+        cell.textLabel?.text = item.title
+        
+        cell.accessoryType = item.done ? .checkmark : .none
+        
         
         return cell
     }
@@ -41,11 +53,9 @@ class ToDoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if tableView.cellForRow(at: indexPath)?.accessoryType != .checkmark {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        } else {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        
+        saveItems()
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
@@ -55,6 +65,8 @@ class ToDoListViewController: UITableViewController {
     @IBAction func newItemPressed(_ sender: Any) {
         
         var myTextField = UITextField()
+        
+        let newItem = Item()
         
         let alert = UIAlertController(title: "Add a New Item to ToDoList", message: "", preferredStyle: .alert)
        
@@ -67,19 +79,16 @@ class ToDoListViewController: UITableViewController {
         let alertAddAction = UIAlertAction(title: "Add", style: .default) { (UIAlertAction) in
             
             if myTextField.text != "" {
-                self.itemArray.append(myTextField.text!)
-                self.defaults.set(self.itemArray, forKey: "ToDoListArray")
-                self.tableView.reloadData()
+                
+                newItem.title = myTextField.text!
+                self.itemArray.append(newItem)
+                
+                self.saveItems()
+                
             } else {
                 self.dismiss(animated: true, completion: nil)
             }
  
-//            if let newItem = myTextField.text {
-//            self.itemArray.append(newItem)
-//            self.tableView.reloadData()
-//            } else {
-//                self.dismiss(animated: true, completion: nil)
-//            }
         }
         
         let alertCancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (UIAlertAction) in
@@ -92,6 +101,33 @@ class ToDoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
         
         
+    }
+    
+    func saveItems() {
+        
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print(error)
+        }
+        
+        tableView.reloadData()
+        
+    }
+    
+    func loadItems() {
+        
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print(error)
+            }
+        }
     }
     
     
