@@ -7,24 +7,20 @@
 //
 
 import UIKit
+import CoreData
 
 class ToDoListViewController: UITableViewController {
     
     
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-    
-    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     var itemArray = [Item]()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        print(dataFilePath)
-        
-//        let newItem = Item()
-        //itemArray.append(newItem)
-        
+//        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+
         loadItems()
         
         
@@ -66,8 +62,6 @@ class ToDoListViewController: UITableViewController {
         
         var myTextField = UITextField()
         
-        let newItem = Item()
-        
         let alert = UIAlertController(title: "Add a New Item to ToDoList", message: "", preferredStyle: .alert)
        
         alert.addTextField { (alertTextField) in
@@ -78,9 +72,14 @@ class ToDoListViewController: UITableViewController {
         
         let alertAddAction = UIAlertAction(title: "Add", style: .default) { (UIAlertAction) in
             
+            
+            
+            let newItem = Item(context: self.context)
+            
             if myTextField.text != "" {
                 
                 newItem.title = myTextField.text!
+                newItem.done = false
                 self.itemArray.append(newItem)
                 
                 self.saveItems()
@@ -105,11 +104,8 @@ class ToDoListViewController: UITableViewController {
     
     func saveItems() {
         
-        let encoder = PropertyListEncoder()
-        
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         } catch {
             print(error)
         }
@@ -118,18 +114,68 @@ class ToDoListViewController: UITableViewController {
         
     }
     
-    func loadItems() {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+
         
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print(error)
-            }
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print(error)
+        }
+        
+        tableView.reloadData()
+    }
+    
+
+}
+
+extension ToDoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        loadItems(with: request)
+        
+        searchBar.resignFirstResponder()
+        
+        
+    }
+    
+    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        searchBar.showsCancelButton = true
+    }
+    
+    func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+        searchBar.showsCancelButton = false
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        if searchText != "" {
+            let request: NSFetchRequest<Item> = Item.fetchRequest()
+            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchText)
+        
+            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+            loadItems(with: request)
+        } else {
+            loadItems()
         }
     }
     
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        
+        searchBar.text = ""
+        searchBar.resignFirstResponder()
+        loadItems()
+        tableView.reloadData()
+        
+        
+    }
     
 }
 
