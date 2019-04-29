@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="14490.99" systemVersion="18E226" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
-    <entity name="Item" representedClassName=".Item" syncable="YES" codeGenerationType="class">
+    <entity name="Category" representedClassName=".Category" syncable="YES" codeGenerationType="class">
         <attribute name="date" attributeType="String" syncable="YES"/>
         <attribute name="done" attributeType="Boolean" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="title" attributeType="String" syncable="YES"/>
-        <relationship name="newRelationship" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ItemEntry" inverseName="itemRelationship" inverseEntity="ItemEntry" syncable="YES"/>
+        <relationship name="newRelationship" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Item" inverseName="itemRelationship" inverseEntity="Item" syncable="YES"/>
     </entity>
-    <entity name="ItemEntry" representedClassName=".ItemEntry" parentEntity="Item" syncable="YES" codeGenerationType="class">
+    <entity name="Item" representedClassName=".Item" parentEntity="Category" syncable="YES" codeGenerationType="class">
         <attribute name="completed" attributeType="Boolean" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="name" attributeType="String" syncable="YES"/>
-        <relationship name="itemRelationship" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Item" inverseName="newRelationship" inverseEntity="Item" syncable="YES"/>
+        <relationship name="itemRelationship" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Category" inverseName="newRelationship" inverseEntity="Category" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Item" positionX="-63" positionY="-18" width="128" height="103"/>
-        <element name="ItemEntry" positionX="-233.0390625" positionY="5.09375" width="128" height="88"/>
+        <element name="Category" positionX="-63" positionY="-18" width="128" height="105"/>
+        <element name="Item" positionX="-233.0390625" positionY="5.09375" width="128" height="90"/>
     </elements>
 </model>

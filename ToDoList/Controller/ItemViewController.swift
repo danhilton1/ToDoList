@@ -7,15 +7,19 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ItemViewController: UITableViewController {
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    let realm = try! Realm()
+    
+    var selectedCategory: Category?
     
     var selectedItem: String?
     
-    var itemArray = [ItemEntry]()
+    var items: Results<Item>?
+    
+    var itemArray: Results<Item>?
 
     @IBOutlet weak var itemTitle: UILabel!
     
@@ -38,24 +42,17 @@ class ItemViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return items?.count ?? 0
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customCell", for: indexPath) as! CustomCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "itemCell", for: indexPath)
         
-        let item = itemArray[indexPath.row]
+        let item = items?[indexPath.row] ?? Item()
         
-        cell.noteLabel?.text = item.name
+        cell.textLabel?.text = item.name
         
-        
-        if item.done == false {
-            cell.accessoryType = .none
-        } else if item.done == true {
-            cell.accessoryType = .checkmark
-        }
-        
-        //        cell.accessoryType = item.done ? .checkmark : .none
+        cell.accessoryType = item.completed ? .checkmark : .none
         
         
         return cell
@@ -70,29 +67,44 @@ class ItemViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if (editingStyle == .delete) {
             
-            context.delete(itemArray[indexPath.row])
-            itemArray.remove(at: indexPath.row)
-            tableView.beginUpdates()
-            tableView.deleteRows(at: [indexPath], with: UITableView.RowAnimation.fade)
-            tableView.endUpdates()
+            deleteRowAtIndexPath(indexPath: indexPath)
             
+        }
+    }
+    
+    private func deleteRowAtIndexPath(indexPath: IndexPath) {
+        
+        if let item = items?[indexPath.row] {
             do {
-                try context.save()
+                try realm.write() {
+                    realm.delete(item)
+                }
+                tableView.deleteRows(at: [indexPath as IndexPath], with: .fade)
             } catch {
-                print(error)
+                print("Could not delete item - \(error)")
             }
-            
-            
         }
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-            itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        if let item = items?[indexPath.row] {
+            do {
+                try realm.write {
+                    item.completed = !item.completed
+                }
+            } catch {
+                    print("Error getting checkmark - \(error)")
+                }
+            }
         
-            saveItems()
+        tableView.reloadData()
         
-    }
+        }
+    
+    
+        
+    
 
    
     @IBAction func addButtonPressed(_ sender: Any) {
@@ -111,21 +123,28 @@ class ItemViewController: UITableViewController {
             
             
             
-            let newItem = ItemEntry(context: self.context)
+            
             
             if myTextField.text != "" {
                 
-                
-                newItem.name = myTextField.text!
-                newItem.completed = false
-                self.itemArray.append(newItem)
-                
-                self.saveItems()
-                
+                if let currentCategory = self.selectedCategory {
+                    do {
+                        try self.realm.write {
+                            let newItem = Item()
+                            newItem.name = myTextField.text!
+                            newItem.completed = false
+                            currentCategory.items.append(newItem)
+                        }
+                    } catch {
+                            print("Error saving item - \(error)")
+                        }
+                } else {
+                }
             } else {
                 self.dismiss(animated: true, completion: nil)
             }
             
+            self.tableView.reloadData()
         }
         
         let alertCancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (UIAlertAction) in
@@ -140,10 +159,12 @@ class ItemViewController: UITableViewController {
         
     }
         
-    func saveItems() {
+    func saveItems(item: Item) {
         
         do {
-            try context.save()
+            try realm.write {
+                realm.add(item)
+            }
         } catch {
             print(error)
         }
@@ -152,14 +173,10 @@ class ItemViewController: UITableViewController {
         
     }
     
-    func loadItems(with request: NSFetchRequest<ItemEntry> = ItemEntry.fetchRequest()) {
+    func loadItems() {
         
-        
-        do {
-            itemArray = try context.fetch(request)
-        } catch {
-            print(error)
-        }
+        items = selectedCategory?.items.sorted(byKeyPath: "name", ascending: false)
+//        items = realm.objects(Item.self)
         
         tableView.reloadData()
     }

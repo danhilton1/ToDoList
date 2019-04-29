@@ -8,23 +8,27 @@
 
 import UIKit
 import CoreData
+import RealmSwift
 
 class ToDoListViewController: UITableViewController {
     
+    let realm = try! Realm()
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+//    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
-    var itemArray = [Item]()
+    var categories: Results<Category>?
     
 //    var itemTitleArray = [String]()
-    var itemTitle = ""
+    var categoryTitle = ""
 
     @IBOutlet weak var editButton: UIBarButtonItem!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-         tableView.register(UINib(nibName: "CustomCell", bundle: nil), forCellReuseIdentifier: "customCell")
+        navigationController?.setToolbarHidden(true, animated: false)
+        
+        tableView.register(UINib(nibName: "CustomCell", bundle: nil), forCellReuseIdentifier: "customCell")
         
 //        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
 
@@ -35,29 +39,31 @@ class ToDoListViewController: UITableViewController {
         
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        navigationController?.setToolbarHidden(true, animated: false)
+    }
+    
     //MARK: - Tableview Datasource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customCell", for: indexPath) as! CustomCell
         
-        let item = itemArray[indexPath.row]
+        let category = categories?[indexPath.row] ?? Category()
         
-        cell.noteLabel?.text = item.title
+        cell.noteLabel?.text = category.title
 //        itemTitleArray.append(cell.noteLabel.text!)
-        cell.dateLabel.text = item.date
+        cell.dateLabel.text = category.date
         
-        if item.done == false {
+        if category.done == false {
             cell.accessoryType = .none
-        } else if item.done == true {
+        } else if category.done == true {
             cell.accessoryType = .checkmark
         }
-        
-         //cell.tickButton.addTarget(self, action: #selector(ToDoListViewController.tickButtonPressed), for: .touchUpInside)
-        
+       
         
         
         
@@ -76,19 +82,22 @@ class ToDoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if (editingStyle == .delete) {
             
-            context.delete(itemArray[indexPath.row])
-            itemArray.remove(at: indexPath.row)
-            tableView.beginUpdates()
-            tableView.deleteRows(at: [indexPath], with: UITableView.RowAnimation.fade)
-            tableView.endUpdates()
-            
-            do {
-                try context.save()
-            } catch {
-                print(error)
-            }
-            
+            deleteRowAtIndexPath(indexPath: indexPath)
 
+        }
+    }
+    
+    private func deleteRowAtIndexPath(indexPath: IndexPath) {
+        
+        if let category = categories?[indexPath.row] {
+        do {
+            try realm.write() {
+                realm.delete(category)
+            }
+            tableView.deleteRows(at: [indexPath as IndexPath], with: .fade)
+        } catch {
+            print("Could not delete item - \(error)")
+        }
         }
     }
     
@@ -109,6 +118,9 @@ class ToDoListViewController: UITableViewController {
             
             let destVC = segue.destination as! ItemViewController
             destVC.selectedItem = sender as? String
+            if let indexPath = tableView.indexPathForSelectedRow {
+                destVC.selectedCategory = categories?[indexPath.row]
+            }
         }
         
     }
@@ -124,12 +136,12 @@ class ToDoListViewController: UITableViewController {
         let cell = tableView.cellForRow(at: indexPath) as! CustomCell
 //        print(cell.noteLabel.text!)
 
-        itemTitle = cell.noteLabel.text!
-        print(itemTitle)
+        categoryTitle = cell.noteLabel.text!
+        
         
 
         if isEditing == false {
-            performSegue(withIdentifier: "goToItem", sender: itemTitle)
+            performSegue(withIdentifier: "goToItem", sender: categoryTitle)
             tableView.deselectRow(at: indexPath, animated: true)
         }
         
@@ -155,7 +167,7 @@ class ToDoListViewController: UITableViewController {
             
             
             
-            let newItem = Item(context: self.context)
+            let newCategory = Category()
             
             if myTextField.text != "" {
                 
@@ -163,12 +175,12 @@ class ToDoListViewController: UITableViewController {
                 let formatter = DateFormatter()
                 formatter.dateFormat = "dd.MM.yyyy"
                 
-                newItem.title = myTextField.text!
-                newItem.date = formatter.string(from: date)
-                newItem.done = false
-                self.itemArray.append(newItem)
+                newCategory.title = myTextField.text!
+                newCategory.date = formatter.string(from: date)
+                newCategory.done = false
                 
-                self.saveItems()
+                
+                self.save(category: newCategory)
                 
             } else {
                 self.dismiss(animated: true, completion: nil)
@@ -221,35 +233,50 @@ class ToDoListViewController: UITableViewController {
     
     @objc func deleteRows(_ sender: Any) {
         if let selectedRows = tableView.indexPathsForSelectedRows {
+            
+            var titleArray = [String]()
+            for title in 0...categories!.count - 1 {
+                titleArray.append((categories?[title].title)!)
+            }
             // 1
-            var items = [Item]()
+            var items = [String]()
             for indexPath in selectedRows  {
-                items.append(itemArray[indexPath.row])
+                items.append(categories?[indexPath.row].title ?? "")
+                
             }
             // 2
+//            print(categories!)
+//            print(items[0])
             for item in items {
-                if let index = itemArray.firstIndex(of: item) {
-                    context.delete(itemArray[index])
-                    itemArray.remove(at: index)
+                if let index = titleArray.firstIndex(of: item) {
+                    do {
+                        
+                        try realm.write {
+                            realm.delete(categories![index])
+                        }
+//                        tableView.deleteRows(at: selectedRows, with: .fade)
+                        
+                    } catch {
+                        print(error)
+                    }
                 }
             }
+            tableView.reloadData()
             // 3
-            tableView.beginUpdates()
-            tableView.deleteRows(at: selectedRows, with: UITableView.RowAnimation.fade)
-            tableView.endUpdates()
+//            tableView.beginUpdates()
+//            tableView.deleteRows(at: selectedRows, with: UITableView.RowAnimation.fade)
+//            tableView.endUpdates()
             
-            do {
-                try context.save()
-            } catch {
-                print(error)
-            }
+            
         }
     }
     
-    func saveItems() {
+    func save(category: Category) {
         
         do {
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print(error)
         }
@@ -258,14 +285,10 @@ class ToDoListViewController: UITableViewController {
         
     }
     
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems() {
 
-        
-        do {
-            itemArray = try context.fetch(request)
-        } catch {
-            print(error)
-        }
+        categories = realm.objects(Category.self)
+       
         
         tableView.reloadData()
     }
@@ -277,14 +300,14 @@ extension ToDoListViewController: UISearchBarDelegate {
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-        
-        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-        
-        loadItems(with: request)
-        
-        searchBar.resignFirstResponder()
+//        let request: NSFetchRequest<Category> = Category.fetchRequest()
+//        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+//
+//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+//
+//        loadItems(with: request)
+//
+//        searchBar.resignFirstResponder()
         
         
     }
@@ -299,17 +322,17 @@ extension ToDoListViewController: UISearchBarDelegate {
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         
-        if searchText != "" {
-            let request: NSFetchRequest<Item> = Item.fetchRequest()
-            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchText)
-        
-            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-        
-            loadItems(with: request)
-            
-        } else {
-            loadItems()
-        }
+//        if searchText != "" {
+//            let request: NSFetchRequest<Category> = Category.fetchRequest()
+//            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchText)
+//        
+//            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+//        
+//            loadItems(with: request)
+//            
+//        } else {
+//            loadItems()
+//        }
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
