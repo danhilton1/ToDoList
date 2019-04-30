@@ -11,24 +11,21 @@ import RealmSwift
 
 class ItemViewController: UITableViewController {
     
+    //MARK: - Variables
+    
     let realm = try! Realm()
     
     var selectedCategory: Category?
-    
     var selectedItem: String?
-    
     var items: Results<Item>?
     
-    var itemArray: Results<Item>?
-
     @IBOutlet weak var itemTitle: UILabel!
+    @IBOutlet weak var editButton: UIBarButtonItem!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        print(toDoListVC.itemTitle)
-        
-//        itemTitle.text = toDoListVC.itemTitle
         itemTitle.text = selectedItem
         
         loadItems()
@@ -40,6 +37,8 @@ class ItemViewController: UITableViewController {
 
         
     }
+    
+    //MARK: - Tableview Datasource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return items?.count ?? 0
@@ -88,6 +87,8 @@ class ItemViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
+        if isEditing == false {
+        
         if let item = items?[indexPath.row] {
             do {
                 try realm.write {
@@ -99,13 +100,14 @@ class ItemViewController: UITableViewController {
             }
         
         tableView.reloadData()
-        
         }
+        
+    }
     
     
         
     
-
+    //MARK: - Button Methods
    
     @IBAction func addButtonPressed(_ sender: Any) {
         
@@ -121,10 +123,7 @@ class ItemViewController: UITableViewController {
         
         let alertAddAction = UIAlertAction(title: "Add", style: .default) { (UIAlertAction) in
             
-            
-            
-            
-            
+
             if myTextField.text != "" {
                 
                 if let currentCategory = self.selectedCategory {
@@ -158,7 +157,82 @@ class ItemViewController: UITableViewController {
         
         
     }
+    
+    
+    @IBAction func editButtonPressed(_ sender: Any) {
         
+        tableView.allowsMultipleSelection = true
+        tableView.allowsMultipleSelectionDuringEditing = true
+        
+        isEditing = !isEditing
+        
+        var myToolbarItems = [UIBarButtonItem]()
+        
+        if editButton.title == "Edit" {
+            editButton.title = "Cancel"
+        } else {
+            editButton.title = "Edit"
+        }
+        
+        if isEditing == true {
+            
+            let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            
+            let deleteBarButtonItem = UIBarButtonItem(title: "Delete", style: .plain, target: self, action: #selector(deleteRows))
+            deleteBarButtonItem.tintColor = UIColor.red
+            
+            myToolbarItems.append(editButton)
+            myToolbarItems.append(flexibleSpace)
+            myToolbarItems.append(deleteBarButtonItem)
+            
+            self.toolbarItems = myToolbarItems
+        } else {
+            
+            self.toolbarItems = [editButton]
+        }
+        
+   
+    }
+    
+    @objc func deleteRows(_ sender: Any) {
+        if let selectedRows = tableView.indexPathsForSelectedRows {
+            
+            var titleArray = [String]()
+            for title in 0...items!.count - 1 {
+                titleArray.append((items?[title].name)!)
+            }
+            // 1
+            var itemArray = [String]()
+            for indexPath in selectedRows  {
+                itemArray.append(items?[indexPath.row].name ?? "")
+                
+            }
+            // 2
+    
+            for item in itemArray {
+                if let index = titleArray.firstIndex(of: item) {
+                    do {
+                        
+                        try realm.write {
+                            realm.delete(items![index])
+                        }
+                        //                        tableView.deleteRows(at: selectedRows, with: .fade)
+                        
+                    } catch {
+                        print(error)
+                    }
+                }
+            }
+            tableView.reloadData()
+            // 3
+            //            tableView.beginUpdates()
+            //            tableView.deleteRows(at: selectedRows, with: UITableView.RowAnimation.fade)
+            //            tableView.endUpdates()
+            
+            
+        }
+    }
+    
     func saveItems(item: Item) {
         
         do {
