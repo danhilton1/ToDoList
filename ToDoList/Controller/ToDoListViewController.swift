@@ -300,14 +300,11 @@ extension ToDoListViewController: UISearchBarDelegate {
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         
-//        let request: NSFetchRequest<Category> = Category.fetchRequest()
-//        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//
-//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-//
-//        loadItems(with: request)
-//
-//        searchBar.resignFirstResponder()
+        categories = categories?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "title", ascending: false)
+        
+        tableView.reloadData()
+
+        searchBar.resignFirstResponder()
         
         
     }
@@ -322,17 +319,16 @@ extension ToDoListViewController: UISearchBarDelegate {
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         
-//        if searchText != "" {
-//            let request: NSFetchRequest<Category> = Category.fetchRequest()
-//            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchText)
-//        
-//            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-//        
-//            loadItems(with: request)
-//            
-//        } else {
-//            loadItems()
-//        }
+        
+        if searchText != "" {
+            
+            categories = categories?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "title", ascending: false)
+            
+            tableView.reloadData()
+         
+        } else {
+            loadItems()
+        }
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
