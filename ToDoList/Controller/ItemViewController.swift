@@ -18,6 +18,7 @@ class ItemViewController: UITableViewController {
     var selectedCategory: Category?
     var selectedItem: String?
     var items: Results<Item>?
+    var myToolbarItems = [UIBarButtonItem]()
     
     @IBOutlet weak var itemTitle: UILabel!
     @IBOutlet weak var editButton: UIBarButtonItem!
@@ -100,8 +101,23 @@ class ItemViewController: UITableViewController {
             }
         
         tableView.reloadData()
+        
+        } else if isEditing == true && tableView.indexPathForSelectedRow?.count != nil {
+            
+            setDeleteToolbarItems()
+
         }
         
+    }
+    
+    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
+
+        if isEditing == true && tableView.indexPathsForSelectedRows?.count == nil {
+
+            setDeleteAllToolbarItems()
+        }
+        
+
     }
     
     
@@ -166,8 +182,6 @@ class ItemViewController: UITableViewController {
         
         isEditing = !isEditing
         
-        var myToolbarItems = [UIBarButtonItem]()
-        
         if editButton.title == "Edit" {
             editButton.title = "Cancel"
         } else {
@@ -176,25 +190,52 @@ class ItemViewController: UITableViewController {
         
         if isEditing == true {
             
-            let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            if tableView.indexPathsForSelectedRows?.count == nil {
             
-            let deleteBarButtonItem = UIBarButtonItem(title: "Delete", style: .plain, target: self, action: #selector(deleteRows))
-            deleteBarButtonItem.tintColor = UIColor.red
-            
-            myToolbarItems.append(editButton)
-            myToolbarItems.append(flexibleSpace)
-            myToolbarItems.append(deleteBarButtonItem)
-            
-            self.toolbarItems = myToolbarItems
+                setDeleteAllToolbarItems()
+                
+            } else {
+                
+               setDeleteToolbarItems()
+                
+            }
         } else {
             
             self.toolbarItems = [editButton]
         }
+
         
    
     }
     
+    func setDeleteToolbarItems() {
+        
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        
+        let deleteBarButtonItem = UIBarButtonItem(title: "Delete", style: .plain, target: self, action: #selector(deleteRows))
+        deleteBarButtonItem.tintColor = UIColor.red
+        
+        myToolbarItems = [editButton, flexibleSpace, deleteBarButtonItem]
+        
+        self.toolbarItems = myToolbarItems
+    }
+    
+    
+    func setDeleteAllToolbarItems() {
+        
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        
+        let deleteAllBarButtonItem = UIBarButtonItem(title: "Delete All", style: .plain, target: self, action: #selector(deleteAllRows))
+        deleteAllBarButtonItem.tintColor = UIColor.red
+        
+        myToolbarItems = [editButton, flexibleSpace, deleteAllBarButtonItem]
+        
+        self.toolbarItems = myToolbarItems
+    }
+    
+    
     @objc func deleteRows(_ sender: Any) {
+        
         if let selectedRows = tableView.indexPathsForSelectedRows {
             
             var titleArray = [String]()
@@ -231,6 +272,39 @@ class ItemViewController: UITableViewController {
             
             
         }
+    }
+    
+    @objc func deleteAllRows() {
+        
+        let alert = UIAlertController(title: "Delete all items?", message: nil, preferredStyle: .actionSheet)
+        
+        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { (UIAlertAction) in
+            
+            if let allRows = self.items {
+                
+                do {
+                    try self.realm.write {
+                        self.realm.delete(allRows)
+                    }
+                } catch {
+                    print("Error deleting all rows - \(error)")
+                }
+                
+                self.tableView.reloadData()
+                self.isEditing = false
+                self.toolbarItems = [self.editButton]
+            }
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (UIAlertAction) in
+            self.dismiss(animated: true, completion: nil)
+        }
+        
+        alert.addAction(deleteAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true, completion: nil)
+        
     }
     
     func saveItems(item: Item) {

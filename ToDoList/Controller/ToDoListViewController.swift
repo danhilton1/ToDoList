@@ -74,15 +74,25 @@ class ToDoListViewController: UITableViewController {
         return true
     }
     
-    
-    
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if (editingStyle == .delete) {
-            
-            deleteRowAtIndexPath(indexPath: indexPath)
-
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { (action, view, complete) in
+            self.deleteRowAtIndexPath(indexPath: indexPath)
+            complete(true)
         }
+        deleteAction.image = UIImage(named: "delete-icon")
+        
+        
+        return UISwipeActionsConfiguration(actions: [deleteAction])
     }
+    
+    
+//    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+//        if (editingStyle == .delete) {
+//            
+//            deleteRowAtIndexPath(indexPath: indexPath)
+//
+//        }
+//    }
     
     private func deleteRowAtIndexPath(indexPath: IndexPath) {
         
