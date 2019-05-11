@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import CoreData
 import RealmSwift
 
 class ToDoListViewController: UITableViewController {
@@ -23,6 +22,7 @@ class ToDoListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        navigationController?.navigationBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
         navigationController?.setToolbarHidden(true, animated: false)
         
         tableView.register(UINib(nibName: "CustomCell", bundle: nil), forCellReuseIdentifier: "customCell")
@@ -37,6 +37,8 @@ class ToDoListViewController: UITableViewController {
     }
     
     override func viewDidAppear(_ animated: Bool) {
+//        self.navigationItem.largeTitleDisplayMode = .always
+//        self.navigationController?.navigationBar.prefersLargeTitles = true
         navigationController?.setToolbarHidden(true, animated: false)
     }
     
@@ -47,12 +49,12 @@ class ToDoListViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
         let cell = tableView.dequeueReusableCell(withIdentifier: "customCell", for: indexPath) as! CustomCell
         
         let category = categories?[indexPath.row] ?? Category()
         
         cell.noteLabel?.text = category.title
-//        itemTitleArray.append(cell.noteLabel.text!)
         cell.dateLabel.text = category.date
         
         if category.done == false {
@@ -61,20 +63,17 @@ class ToDoListViewController: UITableViewController {
             cell.accessoryType = .checkmark
         }
        
-        
-        
-        
-//        cell.accessoryType = item.done ? .checkmark : .none
-        
-        
         return cell
     }
+    
     
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         return true
     }
     
+    
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { (action, view, complete) in
             self.deleteRowAtIndexPath(indexPath: indexPath)
             complete(true)
@@ -86,13 +85,6 @@ class ToDoListViewController: UITableViewController {
     }
     
     
-//    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-//        if (editingStyle == .delete) {
-//            
-//            deleteRowAtIndexPath(indexPath: indexPath)
-//
-//        }
-//    }
     
     private func deleteRowAtIndexPath(indexPath: IndexPath) {
         
@@ -108,17 +100,10 @@ class ToDoListViewController: UITableViewController {
         }
     }
     
-    
-    // TRYING TO GET THE TICK BUTTON TO CHANGE THE DONE PROPERTY EACH TIME IT IS PRESSED!!
-    
-//    @objc func tickButtonPressed() {
-//
-//
-//
-//
-//    }
+
     
     //MARK: - TableView Delegate Methods
+    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         if segue.identifier == "goToItem" {
@@ -134,19 +119,10 @@ class ToDoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-//        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-//
-//        saveItems()
-        
-    
-        
         let cell = tableView.cellForRow(at: indexPath) as! CustomCell
-//        print(cell.noteLabel.text!)
 
         categoryTitle = cell.noteLabel.text!
         
-        
-
         if isEditing == false {
             performSegue(withIdentifier: "goToItem", sender: categoryTitle)
             tableView.deselectRow(at: indexPath, animated: true)
@@ -156,7 +132,7 @@ class ToDoListViewController: UITableViewController {
     }
     
     
-    
+    //MARK: - Button Methods
 
     @IBAction func newItemPressed(_ sender: Any) {
         
@@ -278,6 +254,9 @@ class ToDoListViewController: UITableViewController {
         }
     }
     
+    
+    //MARK: - Save and Load Data Methods
+    
     func save(category: Category) {
         
         do {
@@ -302,6 +281,8 @@ class ToDoListViewController: UITableViewController {
     
 
 }
+
+//MARK: - Search Bar Extension
 
 extension ToDoListViewController: UISearchBarDelegate {
     

@@ -27,6 +27,8 @@ class ItemViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        navigationController?.navigationBar.tintColor = UIColor.white
+        
         itemTitle.text = selectedItem
         
         loadItems()
@@ -38,6 +40,10 @@ class ItemViewController: UITableViewController {
 
         
     }
+    
+//    override func viewDidDisappear(_ animated: Bool) {
+//        navigationController?.navigationBar.prefersLargeTitles = true
+//    }
     
     //MARK: - Tableview Datasource Methods
     
