@@ -13,6 +13,7 @@ class Item: Object {
     
     @objc dynamic var name: String?
     @objc dynamic var completed = false
+    @objc dynamic var datetime: Date?
     
     var parentCategory = LinkingObjects(fromType: Category.self, property: "items")
     

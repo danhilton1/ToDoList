@@ -41,9 +41,6 @@ class ItemViewController: UITableViewController {
         
     }
     
-//    override func viewDidDisappear(_ animated: Bool) {
-//        navigationController?.navigationBar.prefersLargeTitles = true
-//    }
     
     //MARK: - Tableview Datasource Methods
     
@@ -140,6 +137,7 @@ class ItemViewController: UITableViewController {
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new item"
             myTextField = alertTextField
+            myTextField.autocapitalizationType = .sentences
             
         }
         
@@ -154,6 +152,7 @@ class ItemViewController: UITableViewController {
                             let newItem = Item()
                             newItem.name = myTextField.text!
                             newItem.completed = false
+                            newItem.datetime = Date()
                             currentCategory.items.append(newItem)
                         }
                     } catch {
@@ -214,6 +213,8 @@ class ItemViewController: UITableViewController {
    
     }
     
+    //MARK: - Toolbar Methods
+    
     func setDeleteToolbarItems() {
         
         let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
@@ -238,6 +239,8 @@ class ItemViewController: UITableViewController {
         
         self.toolbarItems = myToolbarItems
     }
+    
+    //MARK: Delete row methods
     
     
     @objc func deleteRows(_ sender: Any) {
@@ -299,6 +302,9 @@ class ItemViewController: UITableViewController {
                 self.tableView.reloadData()
                 self.isEditing = false
                 self.toolbarItems = [self.editButton]
+                if self.editButton.title == "Cancel" {
+                    self.editButton.title = "Edit"
+                }
             }
         }
         
@@ -312,6 +318,9 @@ class ItemViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
         
     }
+    
+    
+    //MARK: - Save and load item methods
     
     func saveItems(item: Item) {
         
@@ -329,7 +338,7 @@ class ItemViewController: UITableViewController {
     
     func loadItems() {
         
-        items = selectedCategory?.items.sorted(byKeyPath: "name", ascending: false)
+        items = selectedCategory?.items.sorted(byKeyPath: "datetime", ascending: true)
 //        items = realm.objects(Item.self)
         
         tableView.reloadData()
