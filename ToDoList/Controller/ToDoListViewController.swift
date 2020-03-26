@@ -21,88 +21,42 @@ class ToDoListViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        navigationController?.navigationBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
-        navigationController?.setToolbarHidden(true, animated: false)
-        
+
         tableView.register(UINib(nibName: "CustomCell", bundle: nil), forCellReuseIdentifier: "customCell")
-        
-//        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
 
         loadItems()
-        
-        
-        
-        
+        setUpViews()
     }
     
     override func viewDidAppear(_ animated: Bool) {
-//        self.navigationItem.largeTitleDisplayMode = .always
-//        self.navigationController?.navigationBar.prefersLargeTitles = true
         navigationController?.setToolbarHidden(true, animated: false)
     }
     
-    //MARK: - Tableview Datasource Methods
-    
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories?.count ?? 1
-    }
-    
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func setUpViews() {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customCell", for: indexPath) as! CustomCell
+        navigationController?.setToolbarHidden(true, animated: false)
         
-        let category = categories?[indexPath.row] ?? Category()
-        
-        cell.noteLabel?.text = category.title
-        cell.dateLabel.text = category.date
-        
-        if category.done == false {
-            cell.accessoryType = .none
-        } else if category.done == true {
-            cell.accessoryType = .checkmark
+        if #available(iOS 13.0, *) {
+            let appearance = UINavigationBarAppearance()
+            appearance.backgroundColor = .systemIndigo
+            appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+
+            navigationController?.navigationBar.standardAppearance = appearance
+            navigationController?.navigationBar.compactAppearance = appearance
+            navigationController?.navigationBar.scrollEdgeAppearance = appearance
+        } else {
+            navigationController?.navigationBar.tintColor = .white
+            navigationController?.navigationBar.barTintColor = .purple
+            navigationController?.navigationBar.isTranslucent = false
         }
-       
-        return cell
-    }
-    
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return self.view.frame.size.height * 0.08
-    }
-    
-    
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return true
-    }
-    
-    
-    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         
-        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { (action, view, complete) in
-            self.deleteRowAtIndexPath(indexPath: indexPath)
-            complete(true)
-        }
-        deleteAction.image = UIImage(named: "delete-icon")
-        
-        
-        return UISwipeActionsConfiguration(actions: [deleteAction])
+        tableView.tableFooterView = UIView()
+        tableView.backgroundColor = .groupTableViewBackground
+        tableView.separatorStyle = .none
     }
     
     
-    
-    private func deleteRowAtIndexPath(indexPath: IndexPath) {
-        
-        if let category = categories?[indexPath.row] {
-        do {
-            try realm.write() {
-                realm.delete(category)
-            }
-            tableView.deleteRows(at: [indexPath as IndexPath], with: .fade)
-        } catch {
-            print("Could not delete item - \(error)")
-        }
-        }
-    }
     
 
     
@@ -115,24 +69,10 @@ class ToDoListViewController: UITableViewController {
             let destVC = segue.destination as! ItemViewController
             destVC.selectedItem = sender as? String
             if let indexPath = tableView.indexPathForSelectedRow {
-                destVC.selectedCategory = categories?[indexPath.row]
+                destVC.selectedCategory = categories?[indexPath.section]
             }
         }
         
-    }
-    
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
-        let cell = tableView.cellForRow(at: indexPath) as! CustomCell
-
-        categoryTitle = cell.noteLabel.text!
-        
-        if isEditing == false {
-            performSegue(withIdentifier: "goToItem", sender: categoryTitle)
-            tableView.deselectRow(at: indexPath, animated: true)
-        }
-        
-
     }
     
     
@@ -271,21 +211,109 @@ class ToDoListViewController: UITableViewController {
         } catch {
             print(error)
         }
-        
         tableView.reloadData()
-        
     }
     
     func loadItems() {
 
         categories = realm.objects(Category.self)
-       
-        
         tableView.reloadData()
     }
     
 
 }
+
+//MARK:- TableView Delegate and Datasource Extension
+
+extension ToDoListViewController {
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 1
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return categories?.count ?? 1
+    }
+    
+    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let headerView = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 20))
+        headerView.backgroundColor = .groupTableViewBackground
+        
+        return headerView
+    }
+    
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 5
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "customCell", for: indexPath) as! CustomCell
+        
+        let category = categories?[indexPath.section] ?? Category()
+        
+        cell.noteLabel?.text = category.title
+        cell.dateLabel.text = category.date
+        
+        if category.done == false {
+            cell.accessoryType = .none
+        } else if category.done == true {
+            cell.accessoryType = .checkmark
+        }
+       
+        return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return self.view.frame.size.height * 0.11
+    }
+    
+    
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        let cell = tableView.cellForRow(at: indexPath) as! CustomCell
+
+        categoryTitle = cell.noteLabel.text!
+        
+        if isEditing == false {
+            performSegue(withIdentifier: "goToItem", sender: categoryTitle)
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { (action, view, complete) in
+            self.deleteRowAtIndexPath(indexPath: indexPath)
+            complete(true)
+        }
+        deleteAction.image = UIImage(named: "delete-icon")
+        
+        
+        return UISwipeActionsConfiguration(actions: [deleteAction])
+    }
+    
+    
+    
+    private func deleteRowAtIndexPath(indexPath: IndexPath) {
+        
+        if let category = categories?[indexPath.row] {
+        do {
+            try realm.write() {
+                realm.delete(category)
+            }
+            tableView.deleteRows(at: [indexPath as IndexPath], with: .fade)
+        } catch {
+            print("Could not delete item - \(error)")
+        }
+        }
+    }
+}
+
 
 //MARK: - Search Bar Extension
 

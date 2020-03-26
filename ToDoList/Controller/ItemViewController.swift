@@ -27,101 +27,20 @@ class ItemViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        loadItems()
+        setUpViews()
+          
+    }
+    
+    func setUpViews() {
         navigationController?.navigationBar.tintColor = UIColor.white
-        
+        navigationController?.setToolbarHidden(false, animated: true)
+        tableView.register(UINib(nibName: "CustomCell", bundle: nil), forCellReuseIdentifier: "customCell")
         itemTitle.text = selectedItem
         
-        loadItems()
-        
-        navigationController?.setToolbarHidden(false, animated: true)
-        
-        tableView.register(UINib(nibName: "CustomCell", bundle: nil), forCellReuseIdentifier: "customCell")
-        
+        tableView.tableFooterView = UIView()
+    }
 
-        
-    }
-    
-    
-    //MARK: - Tableview Datasource Methods
-    
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return items?.count ?? 0
-    }
-    
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "itemCell", for: indexPath)
-        
-        let item = items?[indexPath.row] ?? Item()
-        
-        cell.textLabel?.text = item.name
-        
-        cell.accessoryType = item.completed ? .checkmark : .none
-        
-        
-        return cell
-    }
-    
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return true
-    }
-    
-    
-    
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if (editingStyle == .delete) {
-            
-            deleteRowAtIndexPath(indexPath: indexPath)
-            
-        }
-    }
-    
-    private func deleteRowAtIndexPath(indexPath: IndexPath) {
-        
-        if let item = items?[indexPath.row] {
-            do {
-                try realm.write() {
-                    realm.delete(item)
-                }
-                tableView.deleteRows(at: [indexPath as IndexPath], with: .fade)
-            } catch {
-                print("Could not delete item - \(error)")
-            }
-        }
-    }
-    
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
-        if isEditing == false {
-        
-        if let item = items?[indexPath.row] {
-            do {
-                try realm.write {
-                    item.completed = !item.completed
-                }
-            } catch {
-                    print("Error getting checkmark - \(error)")
-                }
-            }
-        
-        tableView.reloadData()
-        
-        } else if isEditing == true && tableView.indexPathForSelectedRow?.count != nil {
-            
-            setDeleteToolbarItems()
-
-        }
-        
-    }
-    
-    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-
-        if isEditing == true && tableView.indexPathsForSelectedRows?.count == nil {
-
-            setDeleteAllToolbarItems()
-        }
-        
-
-    }
     
     
         
@@ -331,7 +250,6 @@ class ItemViewController: UITableViewController {
         } catch {
             print(error)
         }
-        
         tableView.reloadData()
         
     }
@@ -339,10 +257,94 @@ class ItemViewController: UITableViewController {
     func loadItems() {
         
         items = selectedCategory?.items.sorted(byKeyPath: "datetime", ascending: true)
-//        items = realm.objects(Item.self)
         
         tableView.reloadData()
     }
     
 
+}
+
+
+//MARK:- Extension for TableView Delegate and DataSource methods
+
+extension ItemViewController {
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return items?.count ?? 0
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "itemCell", for: indexPath)
+        
+        let item = items?[indexPath.row] ?? Item()
+        
+        cell.textLabel?.text = item.name
+        
+        cell.accessoryType = item.completed ? .checkmark : .none
+        
+        
+        return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if (editingStyle == .delete) {
+            
+            deleteRowAtIndexPath(indexPath: indexPath)
+            
+        }
+    }
+    
+    private func deleteRowAtIndexPath(indexPath: IndexPath) {
+        
+        if let item = items?[indexPath.row] {
+            do {
+                try realm.write() {
+                    realm.delete(item)
+                }
+                tableView.deleteRows(at: [indexPath as IndexPath], with: .fade)
+            } catch {
+                print("Could not delete item - \(error)")
+            }
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        if isEditing == false {
+        
+        if let item = items?[indexPath.row] {
+            do {
+                try realm.write {
+                    item.completed = !item.completed
+                }
+            } catch {
+                    print("Error getting checkmark - \(error)")
+                }
+            }
+        
+        tableView.reloadData()
+        
+        } else if isEditing == true && tableView.indexPathForSelectedRow?.count != nil {
+            
+            setDeleteToolbarItems()
+
+        }
+        
+    }
+    
+    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
+
+        if isEditing == true && tableView.indexPathsForSelectedRows?.count == nil {
+
+            setDeleteAllToolbarItems()
+        }
+        
+
+    }
 }

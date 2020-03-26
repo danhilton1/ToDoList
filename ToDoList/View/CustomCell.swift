@@ -13,31 +13,18 @@ class CustomCell: UITableViewCell {
     
     @IBOutlet weak var noteLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
-    @IBOutlet weak var tickButton: UIButton!
+    @IBOutlet weak var mainView: UIView!
     
-    let toDoListVC = ToDoListViewController()
-    
-    
-    @IBAction func tickButtonPressed(_ sender: Any) {
-
-
-        if tickButton.currentImage == UIImage(named: "UncheckedTick") {
-
-            tickButton.setImage(UIImage(named: "CheckedTick"), for: .normal)
-        } else {
-            tickButton.setImage(UIImage(named: "UncheckedTick"), for: .normal)
-        }
-
-        //toDoListVC.saveItems()
-        
-    }
-    
-    
-
     override func awakeFromNib() {
         super.awakeFromNib()
         
-//        toDoListVC.loadItems()
+        mainView.layer.cornerRadius = 18
+//        mainView.layer.shadowPath = UIBezierPath(rect: mainView.bounds).cgPath
+        
+        mainView.layer.shadowColor = UIColor.gray.cgColor
+        mainView.layer.shadowOpacity = 0.2
+        mainView.layer.shadowOffset = .zero
+        mainView.layer.shadowRadius = 3
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {
